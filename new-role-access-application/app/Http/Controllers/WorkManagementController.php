@@ -15,9 +15,11 @@ class WorkManagementController extends Controller
      */
     public function index()
     {
-        //$userData = UserData::latest()
-        $users = DB::select('select work.id, work.title, work.description, usa.name, role.role_name, work.status, work.created_at, work.updated_at from work_management as work left join users as usa on usa.id = work.user_id left join role_module as role on role.role_id=work.role_id;');
-        return view('home', ['todos' => $users]);
+            $users = DB::select('select work.id, work.title, work.description, usa.name, role.role_name, work.status, work.created_at, work.updated_at from work_management as work left join users as usa on usa.id = work.user_id left join role_module as role on role.role_id=work.role_id;');
+            return view('home', ['todos' => $users]);
+        
+
+        
         
     }
 
@@ -29,7 +31,10 @@ class WorkManagementController extends Controller
     public function create()
     {
         //
+        // $roles = DB::select('select role_id, role_name from role_module');
+        // $users = DB::select('select id as user_id, name from users');
         return view('userData.create');
+        
     }
 
     /**
@@ -41,9 +46,17 @@ class WorkManagementController extends Controller
     public function store(Request $request)
     {   
         //
+        //$userData = UserData::latest()
         $id_s = auth()->user()->id;
-        $data = DB::select('select role_id from work_management where user_id = ?',[$id_s]);  
-        if($data[0]->role_id < 3){
+        $role_id = DB::select('select role_id from work_management where user_id = ?',[$id_s]);
+        $access = DB::select('select page from role_map_page where role_id = ?',[$role_id[0]->role_id]);  
+        $aaa=[];
+        foreach ($access as $p) {
+            array_push($aaa,$p->page);
+        }
+        $let = in_array('add', $aaa);
+        
+        if($let ==  1){
             $request->validate([
                 'title' => 'required',
                 'description' => 'required',
@@ -85,13 +98,23 @@ class WorkManagementController extends Controller
     public function edit($id)
     {
         //
+        //$userData = UserData::latest()
         $id_s = auth()->user()->id;
-        $data = DB::select('select role_id from work_management where user_id = ?',[$id_s]);  
-        $userData = Work_Management::find($id);
-        if($data[0]->role_id < 3){
-            //$userData = DB::select('select work.id as id, work.title, work.description, work.user_id,usa.name, role.role_name,work.role_id, work.status, work.created_at, work.updated_at from work_management as work left join users as usa on usa.id = work.user_id left join role_module as role on role.role_id=work.role_id where work.id=?', [$id]);
-            return view('userData.edit',compact('userData','id'));
+        $role_id = DB::select('select role_id from work_management where user_id = ?',[$id_s]);
+        $access = DB::select('select page from role_map_page where role_id = ?',[$role_id[0]->role_id]);  
+        $aaa=[];
+        foreach ($access as $p) {
+            array_push($aaa,$p->page);
         }
+        $let = in_array('edit', $aaa);
+        
+        if($let ==  1){
+            $userData = Work_Management::find($id);
+            $roles = DB::select('select role_id, role_name from role_module');
+            $users = DB::select('select id as user_id, name from users');
+
+            return view('userData.edit',compact('userData','users','roles','id'));
+        } 
         else{
             return redirect()->route('home')
                         ->withErrors(['msg' => 'Sorry you Donot have access to page']);
@@ -109,10 +132,18 @@ class WorkManagementController extends Controller
      */
     public function update(Request $request, $id)
     {
+        //$userData = UserData::latest()
         $id_s = auth()->user()->id;
-        $data = DB::select('select role_id from work_management where user_id = ?',[$id_s]);  
-        if($data[0]->role_id < 2){
-            //
+        $role_id = DB::select('select role_id from work_management where user_id = ?',[$id_s]);
+        $access = DB::select('select page from role_map_page where role_id = ?',[$role_id[0]->role_id]);  
+        $aaa=[];
+        foreach ($access as $p) {
+            array_push($aaa,$p->page);
+        }
+        $let = in_array('edit', $aaa);
+        
+        if($let ==  1){
+
             $userData = Work_Management::find($id);
             $userData->title = request('title');
             $userData->description = request('description');
@@ -150,17 +181,30 @@ class WorkManagementController extends Controller
     public function destroy($id)
     {
         //
+        //$userData = UserData::latest()
         $id_s = auth()->user()->id;
-        $data = DB::select('select role_id from work_management where user_id = ?',[$id_s]);  
-        if($data[0]->role_id < 2){
+        $role_id = DB::select('select role_id from work_management where user_id = ?',[$id_s]);
+        $access = DB::select('select page from role_map_page where role_id = ?',[$role_id[0]->role_id]);  
+        $aaa=[];
+        foreach ($access as $p) {
+            array_push($aaa,$p->page);
+        }
+        $let = in_array('delete', $aaa);
+        
+        if($let ==  1){
             Work_Management::find($id)->delete();
             return redirect()->route('home')
                         ->with('success','User deleted successfully');
         }
         else{
             return redirect()->route('home')
-                        ->withErrors(['msg' => 'Only super admin can delete this data']);
+                        ->withErrors(['msg' => 'Sorry you Donot have access to page']);
+            
         }
+        
+            
+        
+       
         
     
     }
@@ -168,9 +212,27 @@ class WorkManagementController extends Controller
     public function add()
     {
         //
+        //$userData = UserData::latest()
+        $id_s = auth()->user()->id;
+        $role_id = DB::select('select role_id from work_management where user_id = ?',[$id_s]);
+        $access = DB::select('select page from role_map_page where role_id = ?',[$role_id[0]->role_id]);  
+        $aaa=[];
+        foreach ($access as $p) {
+            array_push($aaa,$p->page);
+        }
+        $let = in_array('add', $aaa);
         
-  
-        return view('userData.create');
+        if($let ==  1){
+            $roles = DB::select('select role_id, role_name from role_module');
+            $users = DB::select('select id as user_id, name from users');
+
+            return view('userData.create',['roles' => $roles],['users' => $users]);
+        }
+        else{
+            return redirect()->route('home')
+                        ->withErrors(['msg' => 'Sorry you Donot have access to page']);
+        }
+        
     
     }
 }
